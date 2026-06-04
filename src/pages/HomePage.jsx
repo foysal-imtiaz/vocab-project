@@ -293,7 +293,7 @@ export default function HomePage() {
             <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
               <span className="text-white font-display font-bold text-xs">V</span>
             </div>
-            <span className="font-display font-bold text-gray-900">Vocabulary</span>
+            <span className="font-display font-bold text-gray-900">ShobdoKosh</span>
           </div>
           <button
             onClick={handleLogin}
@@ -318,7 +318,7 @@ export default function HomePage() {
             <span className="text-brand-600">the smart way</span>
           </h1>
           <p className="text-base text-gray-500 leading-relaxed">
-            Vocabulary built for Bengali speakers. Spaced repetition, MCQ tests,
+            Ace the vocabulary section of any competitive exam. Spaced repetition, MCQ tests,
             and progress tracking — all in one place.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
@@ -441,7 +441,7 @@ export default function HomePage() {
 
         {/* Footer */}
         <div className="text-center pb-4">
-          <p className="text-xs text-gray-400">Vocabulary · Made for Bengali speakers learning English</p>
+          <p className="text-xs text-gray-400">Vocabulary · Curated list for exam preparation</p>
         </div>
       </div>
     </div>

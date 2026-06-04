@@ -174,7 +174,7 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500 mt-1">
             {dueWords?.length
               ? `You have ${dueWords.length} word${dueWords.length === 1 ? '' : 's'} due for review today.`
-              : 'Keep up the great work on your vocabulary!'}
+              : 'Keep up the great work on your vocabulary learning!'}
           </p>
         </div>
 

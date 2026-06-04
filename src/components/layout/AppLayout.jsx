@@ -62,7 +62,7 @@ export default function AppLayout({ children }) {
           <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center flex-shrink-0">
             <span className="text-white font-display font-bold text-sm">V</span>
           </div>
-          <span className="font-display font-bold text-gray-900 text-base">Vocabulary</span>
+          <span className="font-display font-bold text-gray-900 text-base">ShobdoKosh</span>
         </Link>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -114,7 +114,7 @@ export default function AppLayout({ children }) {
           <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center">
             <span className="text-white font-display font-bold text-xs">V</span>
           </div>
-          <span className="font-display font-bold text-gray-900 text-sm">Vocabulary</span>
+          <span className="font-display font-bold text-gray-900 text-sm">ShobdoKosh</span>
         </Link>
         <button
           onClick={() => setMobileOpen(true)}
@@ -137,7 +137,7 @@ export default function AppLayout({ children }) {
                 <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center">
                   <span className="text-white font-display font-bold text-xs">V</span>
                 </div>
-                <span className="font-display font-bold text-gray-900">Vocabulary</span>
+                <span className="font-display font-bold text-gray-900">ShobdoKosh</span>
               </Link>
               <button
                 onClick={() => setMobileOpen(false)}
