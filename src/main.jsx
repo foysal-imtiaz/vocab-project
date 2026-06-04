@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import App from './App'
 import './index.css'
+import { inject } from '@vercel/analytics'
+
+inject()
 
 const queryClient = new QueryClient({
   defaultOptions: {

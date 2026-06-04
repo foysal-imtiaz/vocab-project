@@ -129,13 +129,20 @@ function HomeLeaderboard({ onLogin }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-display font-bold text-gray-900">Leaderboard</h2>
-        <p className="text-sm text-gray-500 mt-0.5">Top learners ranked by words mastered</p>
+        <h2 className="text-lg font-display font-bold text-gray-900">
+          Leaderboard
+        </h2>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Top learners ranked by words mastered
+        </p>
       </div>
       <div className="card overflow-hidden">
         {loading ? (
           [...Array(4)].map((_, i) => (
-            <div key={i} className="px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-0 animate-pulse">
+            <div
+              key={i}
+              className="px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-0 animate-pulse"
+            >
               <div className="w-5 h-5 bg-gray-100 rounded" />
               <div className="w-7 h-7 bg-gray-100 rounded-full" />
               <div className="flex-1 h-3 bg-gray-100 rounded" />
@@ -145,24 +152,59 @@ function HomeLeaderboard({ onLogin }) {
         ) : data.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-sm text-gray-400">No learners yet.</p>
-            <button onClick={onLogin} className="mt-2 text-sm text-brand-600 font-medium hover:underline">Be the first →</button>
+            <button
+              onClick={onLogin}
+              className="mt-2 text-sm text-brand-600 font-medium hover:underline"
+            >
+              Be the first →
+            </button>
           </div>
         ) : (
           <>
             {data.map((entry, i) => (
-              <div key={entry.user_id} className={`px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-0 ${i === 0 ? 'bg-yellow-50/50' : ''}`}>
-                <div className="w-5 flex items-center justify-center flex-shrink-0">{rankIcon(i)}</div>
-                <Avatar url={entry.avatar_url} name={entry.display_name} size="sm" />
-                <p className="flex-1 text-sm font-medium text-gray-800 truncate">{entry.display_name || 'Anonymous'}</p>
+              <div
+                key={entry.user_id}
+                className={`px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-0 ${
+                  i === 0 ? "bg-yellow-50/50" : ""
+                }`}
+              >
+                <div className="w-5 flex items-center justify-center flex-shrink-0">
+                  {rankIcon(i)}
+                </div>
+
+                <Avatar
+                  url={entry.avatar_url}
+                  name={entry.display_name}
+                  size="sm"
+                />
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">
+                    {entry.display_name || "Anonymous"}
+                  </p>
+
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {entry.total_words} words learned · {entry.accuracy}%
+                    accuracy
+                  </p>
+                </div>
+
                 <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold text-gray-900">{entry.mastered}</p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {entry.mastered}
+                  </p>
                   <p className="text-xs text-gray-400">mastered</p>
                 </div>
               </div>
             ))}
             <div className="px-4 py-2.5 bg-gray-50 flex items-center justify-between">
-              <p className="text-xs text-gray-400">Sign in to appear on the leaderboard</p>
-              <button onClick={onLogin} className="text-xs font-medium text-brand-600 hover:underline flex items-center gap-1">
+              <p className="text-xs text-gray-400">
+                Sign in to appear on the leaderboard
+              </p>
+              <button
+                onClick={onLogin}
+                className="text-xs font-medium text-brand-600 hover:underline flex items-center gap-1"
+              >
                 Sign in <ArrowRight size={11} />
               </button>
             </div>
@@ -170,7 +212,7 @@ function HomeLeaderboard({ onLogin }) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 /* ── Main ─────────────────────────────────────────────────────────────────── */
