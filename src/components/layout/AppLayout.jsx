@@ -100,7 +100,7 @@ export default function AppLayout({ children }) {
           </div>
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-150"
+            className="w-full flex justify-center items-center gap-2.5 px-3 py-2 mt-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-150"
           >
             <LogOut size={15} />
             Sign out

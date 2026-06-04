@@ -190,14 +190,19 @@ export async function completeLearningSession(sessionId, wordsStudied) {
 }
 
 /**
- * Fetch leaderboard — top users ranked by mastered words (tier 4)
- * Calls the leaderboard_stats database view.
+ * Fetch leaderboard sorted by composite score:
+ *   mastered × 100  (primary — long-term memory)
+ *   total_words × 2 (secondary — effort)
+ *   accuracy × 0.5  (tiebreaker — quality)
  */
 export async function fetchLeaderboard() {
   const { data, error } = await supabase
     .from('leaderboard_stats')
     .select('*')
+    .order('score', { ascending: false })
     .order('mastered', { ascending: false })
+    .order('total_words', { ascending: false })
+    .order('accuracy', { ascending: false })
     .limit(50)
 
   if (error) throw error

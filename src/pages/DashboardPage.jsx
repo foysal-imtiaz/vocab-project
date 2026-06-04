@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search, BookOpen, RotateCcw, GraduationCap,
-  Target, Zap, CheckCircle2, ChevronRight, X,
+  Target, Zap, CheckCircle2, ChevronRight, X, ChevronDown,
 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
-import { useUserStats, useDueWords, useWords } from '@/hooks/useVocab'
+import { useUserStats, useDueWords } from '@/hooks/useVocab'
 import { useAuthStore } from '@/store/authStore'
 import { useDebounce } from '@/hooks/useDebounce'
 import { getTierInfo } from '@/lib/spacedRepetition'
+import { supabase } from '@/lib/supabase'
 
 function StatCard({ icon: Icon, label, value, color, sub }) {
   return (
@@ -25,25 +26,83 @@ function StatCard({ icon: Icon, label, value, color, sub }) {
   )
 }
 
-// Inline search dropdown result row
-function SearchResultRow({ word, onClick }) {
+// Collapsible word row — same pattern as homepage but includes tier badge
+function WordRow({ word }) {
+  const [expanded, setExpanded] = useState(false)
   const tier = getTierInfo(word.progress?.learning_tier ?? 0)
+
+  const examples = Array.isArray(word.example_sentences)
+    ? word.example_sentences
+    : word.example_sentences ? [word.example_sentences] : []
+
+  const synonyms = Array.isArray(word.english_definition_synonyms)
+    ? word.english_definition_synonyms
+    : word.english_definition_synonyms
+        ? word.english_definition_synonyms.split(',').map(s => s.trim())
+        : []
+
   return (
-    <button
-      onClick={() => onClick(word)}
-      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors"
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-900">{word.english_word}</span>
-          {word.part_of_speech && (
-            <span className="text-xs text-gray-400 italic">{word.part_of_speech}</span>
+    <div className="border-b border-gray-100 last:border-0">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-900">{word.english_word}</span>
+            {word.part_of_speech && (
+              <span className="text-xs text-gray-400 italic hidden sm:inline">{word.part_of_speech}</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5">{word.bangla_meaning}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={`badge text-xs ${tier.color}`}>{tier.label}</span>
+          <ChevronDown
+            size={14}
+            className={`text-gray-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+          />
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-4 space-y-3 bg-gray-50/60">
+          {synonyms.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5">
+                Definition & Synonyms
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {synonyms.map((syn, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-0.5 bg-white border border-gray-200 rounded text-xs text-gray-700"
+                  >
+                    {syn}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {examples.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5">Examples</p>
+              <ul className="space-y-1">
+                {examples.map((ex, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-gray-300 flex-shrink-0">—</span>
+                    <p className="text-xs italic text-gray-600 leading-relaxed">{ex}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {!synonyms.length && !examples.length && (
+            <p className="text-xs text-gray-400 italic">No additional details.</p>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-0.5 truncate">{word.bangla_meaning}</p>
-      </div>
-      <span className={`badge text-xs flex-shrink-0 ${tier.color}`}>{tier.label}</span>
-    </button>
+      )}
+    </div>
   )
 }
 
@@ -54,55 +113,55 @@ export default function DashboardPage() {
   const { data: dueWords } = useDueWords()
 
   const [search, setSearch] = useState('')
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const searchRef = useRef(null)
+  const [searchResults, setSearchResults] = useState([])
+  const [searching, setSearching] = useState(false)
   const debouncedSearch = useDebounce(search, 300)
-
-  // Fetch search results while typing (only when there's a query)
-  const { data: searchData, isFetching: searchFetching } = useWords({
-    page: 1,
-    pageSize: 6,
-    search: debouncedSearch,
-  })
-  const searchResults = debouncedSearch.trim() ? (searchData?.words || []) : []
 
   const name = user?.user_metadata?.full_name?.split(' ')[0] || 'there'
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
-  // Close dropdown on outside click
+  // Search words with progress via Supabase directly
   useEffect(() => {
-    const handler = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setDropdownOpen(false)
-      }
+    if (!debouncedSearch.trim()) {
+      setSearchResults([])
+      return
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  // Open dropdown whenever there's a debounced query
-  useEffect(() => {
-    if (debouncedSearch.trim()) setDropdownOpen(true)
-    else setDropdownOpen(false)
-  }, [debouncedSearch])
-
-  const handleWordClick = (word) => {
-    setSearch('')
-    setDropdownOpen(false)
-    // Navigate to vocabulary page and auto-expand this word
-    navigate(`/vocabulary?expand=${word.id}`)
-  }
-
-  const handleViewAll = () => {
-    setDropdownOpen(false)
-    navigate(`/vocabulary?search=${encodeURIComponent(debouncedSearch.trim())}`)
-  }
+    setSearching(true)
+    supabase
+      .from('words')
+      .select(`
+        *,
+        user_progress!left(
+          id, learning_tier, mastery_score,
+          last_reviewed_at, next_review_date,
+          total_correct, total_wrong
+        )
+      `)
+      .eq('user_progress.user_id', user.id)
+      .or(`english_word.ilike.%${debouncedSearch.trim()}%,bangla_meaning.ilike.%${debouncedSearch.trim()}%`)
+      .order('english_word', { ascending: true })
+      .limit(20)
+      .then(({ data, error }) => {
+        if (!error) {
+          setSearchResults(
+            (data || []).map(w => ({
+              ...w,
+              progress: w.user_progress?.[0] || null,
+              user_progress: undefined,
+            }))
+          )
+        }
+      })
+      .finally(() => setSearching(false))
+  }, [debouncedSearch, user?.id])
 
   const clearSearch = () => {
     setSearch('')
-    setDropdownOpen(false)
+    setSearchResults([])
   }
+
+  const showResults = debouncedSearch.trim().length > 0
 
   return (
     <AppLayout>
@@ -119,50 +178,58 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Search with inline dropdown */}
-        <div className="relative" ref={searchRef}>
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
-          <input
-            type="text"
-            placeholder="Search words in English or বাংলা..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onFocus={() => { if (debouncedSearch.trim()) setDropdownOpen(true) }}
-            className="input pl-9 pr-9 py-2.5 text-sm"
-          />
-          {search && (
-            <button
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X size={14} />
-            </button>
-          )}
+        {/* Search + inline results */}
+        <div className="space-y-2">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search words in English or বাংলা..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="input pl-9 pr-9 py-2.5 text-sm"
+            />
+            {search && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
 
-          {/* Dropdown */}
-          {dropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-              {searchFetching && searchResults.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-gray-400">Searching…</div>
+          {/* Inline collapsible results — shown below search bar */}
+          {showResults && (
+            <div className="card overflow-hidden">
+              {searching ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="px-4 py-3 border-b border-gray-100 last:border-0 animate-pulse flex items-center gap-3">
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3.5 w-28 bg-gray-100 rounded" />
+                      <div className="h-3 w-20 bg-gray-100 rounded" />
+                    </div>
+                    <div className="h-5 w-14 bg-gray-100 rounded" />
+                  </div>
+                ))
               ) : searchResults.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-gray-400">
+                <div className="px-4 py-4 text-sm text-gray-400">
                   No words found for "{debouncedSearch}"
                 </div>
               ) : (
                 <>
-                  <div className="divide-y divide-gray-100">
-                    {searchResults.map((word) => (
-                      <SearchResultRow key={word.id} word={word} onClick={handleWordClick} />
-                    ))}
-                  </div>
-                  {searchData?.total > 6 && (
+                  {searchResults.map(word => (
+                    <WordRow key={word.id} word={word} />
+                  ))}
+                  <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                    <p className="text-xs text-gray-400">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''}</p>
                     <button
-                      onClick={handleViewAll}
-                      className="w-full px-4 py-2.5 text-xs font-medium text-brand-600 hover:bg-brand-50 transition-colors border-t border-gray-100 text-left"
+                      onClick={() => navigate(`/vocabulary?search=${encodeURIComponent(debouncedSearch.trim())}`)}
+                      className="text-xs font-medium text-brand-600 hover:underline"
                     >
-                      View all {searchData.total} results →
+                      Browse full list →
                     </button>
-                  )}
+                  </div>
                 </>
               )}
             </div>

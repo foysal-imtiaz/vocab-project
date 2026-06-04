@@ -5,7 +5,9 @@ import AppLayout from '@/components/layout/AppLayout'
 import WordStudyCard from '@/features/learning/WordStudyCard'
 import McqQuestion from '@/features/learning/McqQuestion'
 import SessionResults from '@/features/learning/SessionResults'
-import { useNewWords, useRecordAnswer, useCreateSession, useCompleteSession } from '@/hooks/useVocab'
+import { useRecordAnswer, useCreateSession, useCompleteSession } from '@/hooks/useVocab'
+import { fetchNewWords } from '@/services/wordsService'
+import { useAuthStore } from '@/store/authStore'
 
 const BATCH_OPTIONS = [
   { value: 10, label: '10 words' },
@@ -90,32 +92,30 @@ function NoWordsScreen({ onGoReview }) {
 
 export default function LearningPage() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const [phase, setPhase] = useState('setup')
-  const [batchSize, setBatchSize] = useState(10)
   const [words, setWords] = useState([])
   const [studyIndex, setStudyIndex] = useState(0)
   const [mcqIndex, setMcqIndex] = useState(0)
   const [mcqResults, setMcqResults] = useState([])
   const [sessionId, setSessionId] = useState(null)
 
-  const { refetch: refetchWords } = useNewWords(batchSize, false)
   const recordAnswer = useRecordAnswer()
   const createSession = useCreateSession()
   const completeSession = useCompleteSession()
 
   const handleStart = async (size) => {
-    setBatchSize(size)
     setPhase('loading')
     try {
-      const result = await refetchWords()
-      const fetched = result.data || []
-      if (fetched.length === 0) {
+      // Call fetchNewWords directly with the chosen size — no stale React state involved
+      const fetched = await fetchNewWords(user.id, size)
+      if (!fetched || fetched.length === 0) {
         setPhase('no-words')
         return
       }
       const session = await createSession.mutateAsync()
       setSessionId(session.id)
-      setWords(fetched.slice(0, size))
+      setWords(fetched)
       setStudyIndex(0)
       setMcqIndex(0)
       setMcqResults([])
