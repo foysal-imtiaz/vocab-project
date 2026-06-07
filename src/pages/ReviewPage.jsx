@@ -52,11 +52,10 @@ function RepetitionExplainer() {
   const [open, setOpen] = useState(false)
 
   const tiers = [
-    { label: 'New',       color: 'bg-gray-100 text-gray-600',    days: null,  desc: 'First seen — not yet tested' },
-    { label: 'Learned',   color: 'bg-orange-50 text-orange-600', days: 3,     desc: 'Answered correctly once' },
-    { label: 'Practiced', color: 'bg-blue-50 text-blue-600',     days: 7,     desc: 'Correctly recalled after 3 days' },
-    { label: 'Advanced',  color: 'bg-violet-50 text-violet-600', days: 14,    desc: 'Correctly recalled after a week' },
-    { label: 'Mastered',  color: 'bg-green-50 text-green-600',   days: 30,    desc: 'Correctly recalled after 2 weeks' },
+    { label: 'New',      color: 'bg-gray-100 text-gray-600',    days: null, desc: 'Word studied — review scheduled for tomorrow' },
+    { label: 'Learned',  color: 'bg-orange-50 text-orange-600', days: 1,    desc: 'Review next day — correct → Advanced' },
+    { label: 'Advanced', color: 'bg-blue-50 text-blue-600',     days: 3,    desc: 'Review in 3 days — correct → Mastered' },
+    { label: 'Mastered', color: 'bg-green-50 text-green-600',   days: null, desc: 'Never reviewed again — permanently done' },
   ]
 
   return (
@@ -110,9 +109,7 @@ function RepetitionExplainer() {
           <div className="bg-red-50 border border-red-100 rounded-lg px-3 py-2.5 space-y-1">
             <p className="text-xs font-semibold text-red-700">If you answer incorrectly</p>
             <p className="text-xs text-red-600 leading-relaxed">
-              The word drops back to <span className="font-semibold">Learned</span> and returns
-              in <span className="font-semibold">3 days</span> — giving you another chance to
-              strengthen it before moving forward again.
+              The word stays at its current tier (<span className="font-semibold">Learned</span> or <span className="font-semibold">Advanced</span>) and returns on the same schedule — Learned returns tomorrow, Advanced in 3 days.
             </p>
           </div>
 
@@ -121,8 +118,8 @@ function RepetitionExplainer() {
             <p className="text-xs font-semibold text-brand-700 mb-1">Why this works</p>
             <p className="text-xs text-brand-600 leading-relaxed">
               Reviewing a word just before you'd forget it strengthens the memory more than
-              reviewing it repeatedly in one session. After reaching <span className="font-semibold">Mastered</span>,
-              a word only comes back once every 30 days — so you spend time on what actually needs attention.
+              reviewing it repeatedly in one session. Once a word reaches <span className="font-semibold">Mastered</span>,
+              it leaves the review queue permanently — so you only spend time on what actually needs attention.
             </p>
           </div>
         </div>
@@ -164,7 +161,7 @@ function AllClearScreen({ onLearn }) {
           <li className="flex items-start gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-1.5 flex-shrink-0" />
             <span>
-              <span className="font-medium text-gray-800">Come back tomorrow</span> — any Learned words from today will appear in 3 days, Practiced in 7, and so on.
+              <span className="font-medium text-gray-800">Come back in 3 days</span> — any Learned words will appear here automatically. Mastered words are done for good.
             </span>
           </li>
           <li className="flex items-start gap-2">
@@ -307,10 +304,8 @@ export default function ReviewPage() {
                   <div className="card divide-y divide-gray-100">
                     {dueWords.map((word) => {
                       const currentTier = word.progress?.learning_tier ?? 0
-                      const nextTier = Math.min(currentTier + 1, 4)
-                      const daysUntilNext = TIER_INTERVALS[nextTier]
-                      const nextDate = new Date()
-                      nextDate.setDate(nextDate.getDate() + daysUntilNext)
+                      const afterCorrect = Math.min(currentTier + 1, 3)
+                      const isMastering = afterCorrect === 3
 
                       return (
                         <div key={word.id} className="px-4 py-3 flex items-center gap-3">
@@ -324,12 +319,10 @@ export default function ReviewPage() {
                             <p className="text-xs text-gray-500 mt-0.5">{word.bangla_meaning}</p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-xs font-medium text-gray-500">
-                              {getTierInfo(nextTier).label}
+                            <p className={`text-xs font-medium ${isMastering ? 'text-green-600' : 'text-gray-500'}`}>
+                              {isMastering ? '→ Mastered ✓' : `→ ${getTierInfo(afterCorrect).label}`}
                             </p>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {formatDate(nextDate.toISOString())}
-                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">if correct</p>
                           </div>
                         </div>
                       )

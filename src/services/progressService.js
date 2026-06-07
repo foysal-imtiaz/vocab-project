@@ -37,16 +37,45 @@ export async function getOrCreateProgress(userId, wordId) {
 }
 
 /**
- * Update progress after a correct answer
+ * Mark a word as Learned (tier 1) after studying it.
+ * Called when user finishes studying a word in a learning session.
+ */
+export async function markWordAsLearned(userId, wordId) {
+  const progress = await getOrCreateProgress(userId, wordId)
+
+  // Only promote New (0) words — don't demote already-learned words
+  if (progress.learning_tier > 0) return progress
+
+  const nextReview = getNextReviewDate(1) // tomorrow
+
+  const { data, error } = await supabase
+    .from('user_progress')
+    .update({
+      learning_tier: 1,
+      last_reviewed_at: new Date().toISOString(),
+      next_review_date: nextReview,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', progress.id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Record a correct answer in review or exam.
+ * Learned(1) correct → Advanced(2), review in 3 days
+ * Advanced(2) correct → Mastered(3), no future review
  */
 export async function recordCorrectAnswer(userId, wordId) {
   const progress = await getOrCreateProgress(userId, wordId)
 
   const newTier = getTierAfterCorrect(progress.learning_tier)
   const newCorrect = progress.total_correct + 1
-  const newWrong = progress.total_wrong
-  const newMastery = getMasteryScore(newCorrect, newWrong)
-  const nextReview = getNextReviewDate(newTier)
+  const newMastery = getMasteryScore(newCorrect, progress.total_wrong)
+  const nextReview = newTier === 3 ? null : getNextReviewDate(newTier)
 
   const { data, error } = await supabase
     .from('user_progress')
@@ -67,15 +96,16 @@ export async function recordCorrectAnswer(userId, wordId) {
 }
 
 /**
- * Update progress after a wrong answer
+ * Record a wrong answer in review or exam.
+ * Learned(1) wrong → stays Learned(1), review tomorrow
+ * Advanced(2) wrong → stays Advanced(2), review in 3 days
  */
 export async function recordWrongAnswer(userId, wordId) {
   const progress = await getOrCreateProgress(userId, wordId)
 
-  const newTier = getTierAfterWrong()
+  const newTier = getTierAfterWrong(progress.learning_tier)
   const newWrong = progress.total_wrong + 1
-  const newCorrect = progress.total_correct
-  const newMastery = getMasteryScore(newCorrect, newWrong)
+  const newMastery = getMasteryScore(progress.total_correct, newWrong)
   const nextReview = getNextReviewDate(newTier)
 
   const { data, error } = await supabase
@@ -109,12 +139,11 @@ export async function recordTestAttempt({ userId, wordId, selectedAnswer, correc
       correct_answer: correctAnswer,
       is_correct: isCorrect,
     })
-
   if (error) throw error
 }
 
 /**
- * Fetch dashboard stats for a user
+ * Fetch dashboard stats
  */
 export async function fetchUserStats(userId) {
   const [progressRes, dueRes, attemptsRes] = await Promise.all([
@@ -122,14 +151,12 @@ export async function fetchUserStats(userId) {
       .from('user_progress')
       .select('learning_tier, total_correct, total_wrong')
       .eq('user_id', userId),
-
     supabase
       .from('user_progress')
       .select('id')
       .eq('user_id', userId)
       .lte('next_review_date', new Date().toISOString())
       .gt('learning_tier', 0),
-
     supabase
       .from('test_attempts')
       .select('is_correct')
@@ -140,8 +167,9 @@ export async function fetchUserStats(userId) {
   const due = dueRes.data || []
   const attempts = attemptsRes.data || []
 
-  const mastered = progress.filter((p) => p.learning_tier === 4).length
-  const learning = progress.filter((p) => p.learning_tier > 0 && p.learning_tier < 4).length
+  const mastered = progress.filter((p) => p.learning_tier === 3).length
+  const advanced = progress.filter((p) => p.learning_tier === 2).length
+  const learning = progress.filter((p) => p.learning_tier === 1).length
   const totalCorrect = attempts.filter((a) => a.is_correct).length
   const accuracy = attempts.length
     ? Math.round((totalCorrect / attempts.length) * 100)
@@ -150,6 +178,7 @@ export async function fetchUserStats(userId) {
   return {
     wordsStarted: progress.length,
     mastered,
+    advanced,
     learning,
     dueToday: due.length,
     totalAttempts: attempts.length,
@@ -158,7 +187,25 @@ export async function fetchUserStats(userId) {
 }
 
 /**
- * Create a learning session record
+ * Fetch learned words (tier 1 + tier 2) available for exam
+ */
+export async function fetchLearnedWords(userId) {
+  const { data, error } = await supabase
+    .from('user_progress')
+    .select('*, words(*)')
+    .eq('user_id', userId)
+    .in('learning_tier', [1, 2])
+    .order('last_reviewed_at', { ascending: true })
+
+  if (error) throw error
+  return (data || []).map((p) => ({
+    ...p.words,
+    progress: { ...p, words: undefined },
+  }))
+}
+
+/**
+ * Create a learning session
  */
 export async function createLearningSession(userId) {
   const { data, error } = await supabase
@@ -190,10 +237,7 @@ export async function completeLearningSession(sessionId, wordsStudied) {
 }
 
 /**
- * Fetch leaderboard sorted by composite score:
- *   mastered × 100  (primary — long-term memory)
- *   total_words × 2 (secondary — effort)
- *   accuracy × 0.5  (tiebreaker — quality)
+ * Fetch leaderboard sorted by composite score
  */
 export async function fetchLeaderboard() {
   const { data, error } = await supabase

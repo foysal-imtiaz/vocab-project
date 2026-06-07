@@ -29,14 +29,14 @@ export default function VocabularyPage() {
 
   const { data, isLoading, isFetching } = useWords({
     page,
-    pageSize: 15,
+    pageSize: 25,
     search: debouncedSearch,
     difficulty,
   })
 
   const words = data?.words || []
   const total = data?.total || 0
-  const totalPages = Math.ceil(total / 15)
+  const totalPages = Math.ceil(total / 25)
 
   const clearSearch = () => {
     setSearch('')
@@ -129,7 +129,7 @@ export default function VocabularyPage() {
         {/* Word list */}
         <div className={`space-y-2 transition-opacity ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
           {isLoading ? (
-            [...Array(6)].map((_, i) => (
+            [...Array(8)].map((_, i) => (
               <div key={i} className="card p-4 animate-pulse">
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
@@ -224,7 +224,7 @@ function PublicWrapper({ children, onLogin }) {
             <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
               <span className="text-white font-display font-bold text-xs">V</span>
             </div>
-            <span className="font-display font-bold text-gray-900">Vocabulary</span>
+            <span className="font-display font-bold text-gray-900">VocabBD</span>
           </button>
           <button
             onClick={onLogin}

@@ -7,6 +7,7 @@ import McqQuestion from '@/features/learning/McqQuestion'
 import SessionResults from '@/features/learning/SessionResults'
 import { useRecordAnswer, useCreateSession, useCompleteSession } from '@/hooks/useVocab'
 import { fetchNewWords } from '@/services/wordsService'
+import { markWordAsLearned } from '@/services/progressService'
 import { useAuthStore } from '@/store/authStore'
 
 const BATCH_OPTIONS = [
@@ -28,9 +29,9 @@ function SetupScreen({ onStart }) {
           <p className="text-sm font-semibold text-gray-700 mb-3">How it works</p>
           <div className="space-y-2.5">
             {[
-              { step: '1', text: 'Study each word — use Back and Next to move freely through the batch' },
-              { step: '2', text: 'After reviewing all words, take a quick MCQ test' },
-              { step: '3', text: 'Results update your spaced repetition schedule automatically' },
+              { step: '1', text: 'Study each word — use Back and Next to move freely' },
+              { step: '2', text: 'Words become Learned and appear in Review the next day' },
+              { step: '3', text: 'Answer correctly in Review → Advanced, then Mastered' },
             ].map((item) => (
               <div key={item.step} className="flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-brand-100 text-brand-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -107,7 +108,6 @@ export default function LearningPage() {
   const handleStart = async (size) => {
     setPhase('loading')
     try {
-      // Call fetchNewWords directly with the chosen size — no stale React state involved
       const fetched = await fetchNewWords(user.id, size)
       if (!fetched || fetched.length === 0) {
         setPhase('no-words')
@@ -126,7 +126,12 @@ export default function LearningPage() {
     }
   }
 
-  const handleStudyNext = () => {
+  const handleStudyNext = async () => {
+    // Mark current word as Learned (tier 1) — review tomorrow
+    const currentWord = words[studyIndex]
+    if (currentWord) {
+      markWordAsLearned(user.id, currentWord.id).catch(console.error)
+    }
     if (studyIndex + 1 >= words.length) {
       setPhase('mcq')
     } else {

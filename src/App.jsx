@@ -7,6 +7,7 @@ import DashboardPage from '@/pages/DashboardPage'
 import VocabularyPage from '@/pages/VocabularyPage'
 import LearningPage from '@/pages/LearningPage'
 import ReviewPage from '@/pages/ReviewPage'
+import ExamPage from '@/pages/ExamPage'
 import LeaderboardPage from '@/pages/LeaderboardPage'
 import LoadingScreen from '@/components/ui/LoadingScreen'
 
@@ -21,17 +22,15 @@ export default function App() {
 
   return (
     <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<HomePage />} />
+      <Route path="/"           element={<HomePage />} />
       <Route path="/vocabulary" element={<VocabularyPage />} />
 
-      {/* Protected routes */}
       <Route path="/dashboard"   element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/learn"       element={<ProtectedRoute><LearningPage /></ProtectedRoute>} />
       <Route path="/review"      element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
+      <Route path="/exam"        element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
       <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
 
-      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

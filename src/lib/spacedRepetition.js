@@ -1,21 +1,25 @@
-// Tier-based spaced repetition intervals (in days)
-// 4 active tiers + tier 0 (New, unseen)
+// 4-state system (3 active tiers + New):
+//   0 = New      — studied but not yet reviewed
+//   1 = Learned  — review next day (1 day)
+//   2 = Advanced — review in 3 days
+//   3 = Mastered — never reviewed again
+
 export const TIER_INTERVALS = {
-  0: 0,   // New — not yet reviewed
-  1: 3,   // Learned — review in 3 days
-  2: 7,   // Practiced — review in 7 days
-  3: 14,  // Advanced — review in 14 days
-  4: 30,  // Mastered — review in 30 days
+  0: 0,    // New — no review scheduled
+  1: 1,    // Learned — review tomorrow
+  2: 3,    // Advanced — review in 3 days
+  3: null, // Mastered — no review ever
 }
 
-export const MAX_TIER = 4
+export const MAX_TIER = 3
 export const MIN_TIER = 0
 
 /**
- * Calculate the next review date based on tier
+ * Next review date. Returns null for Mastered.
  */
 export function getNextReviewDate(tier) {
-  const days = TIER_INTERVALS[tier] ?? 3
+  if (tier === 3) return null
+  const days = TIER_INTERVALS[tier] ?? 1
   const date = new Date()
   date.setDate(date.getDate() + days)
   date.setHours(0, 0, 0, 0)
@@ -23,46 +27,44 @@ export function getNextReviewDate(tier) {
 }
 
 /**
- * Calculate new tier after answering correctly
+ * Correct answer → move up one tier (capped at Mastered)
  */
 export function getTierAfterCorrect(currentTier) {
   return Math.min(currentTier + 1, MAX_TIER)
 }
 
 /**
- * Calculate new tier after answering incorrectly.
- * Drops back to Learned (tier 1) so it resurfaces in 3 days.
+ * Wrong answer → stay at current tier (minimum Learned=1)
+ * New(0) should never be in review, but guard anyway.
  */
-export function getTierAfterWrong() {
-  return 1
+export function getTierAfterWrong(currentTier) {
+  return Math.max(currentTier, 1)
 }
 
 /**
- * Determine if a word is due for review
+ * Is a word due for review?
+ * Mastered (null next_review_date) is never due.
  */
 export function isDueForReview(nextReviewDate) {
   if (!nextReviewDate) return false
-  const now = new Date()
-  const reviewDate = new Date(nextReviewDate)
-  return reviewDate <= now
+  return new Date(nextReviewDate) <= new Date()
 }
 
 /**
- * Get tier label and color for display
+ * Tier label and color
  */
 export function getTierInfo(tier) {
   const tiers = {
     0: { label: 'New',      color: 'bg-gray-100 text-gray-600',    dot: 'bg-gray-400' },
     1: { label: 'Learned',  color: 'bg-orange-50 text-orange-600', dot: 'bg-orange-400' },
-    2: { label: 'Practiced',color: 'bg-blue-50 text-blue-600',     dot: 'bg-blue-400' },
-    3: { label: 'Advanced', color: 'bg-violet-50 text-violet-600', dot: 'bg-violet-400' },
-    4: { label: 'Mastered', color: 'bg-green-50 text-green-600',   dot: 'bg-green-500' },
+    2: { label: 'Advanced', color: 'bg-blue-50 text-blue-600',     dot: 'bg-blue-400' },
+    3: { label: 'Mastered', color: 'bg-green-50 text-green-600',   dot: 'bg-green-500' },
   }
   return tiers[tier] ?? tiers[0]
 }
 
 /**
- * Calculate mastery score as a percentage (0–100)
+ * Mastery score as percentage
  */
 export function getMasteryScore(totalCorrect, totalWrong) {
   const total = totalCorrect + totalWrong
@@ -71,7 +73,7 @@ export function getMasteryScore(totalCorrect, totalWrong) {
 }
 
 /**
- * Shuffle array using Fisher-Yates algorithm
+ * Fisher-Yates shuffle
  */
 export function shuffleArray(array) {
   const arr = [...array]
@@ -83,17 +85,26 @@ export function shuffleArray(array) {
 }
 
 /**
- * Build MCQ options: include correct answer + 3 distractors from mcq_options
+ * Build MCQ options: correct answer + up to 3 distractors
  */
 export function buildMcqOptions(word) {
   const correctAnswer = word.bangla_meaning
   const distractors = word.mcq_options
     ? word.mcq_options.filter((opt) => opt !== correctAnswer)
     : []
-
-  // Pick up to 3 distractors
   const picked = shuffleArray(distractors).slice(0, 3)
   const options = shuffleArray([correctAnswer, ...picked])
-
   return { options, correctAnswer }
 }
+
+/**
+ * Exam time limits in seconds based on question count
+ */
+export const EXAM_TIME_LIMITS = {
+  20: 7 * 60,   // 7 minutes
+  30: 11 * 60,  // 11 minutes
+  40: 15 * 60,  // 15 minutes
+  50: 22 * 60,  // 22 minutes
+}
+
+export const EXAM_SIZES = [20, 30, 40, 50]

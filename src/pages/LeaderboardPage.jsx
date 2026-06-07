@@ -1,20 +1,17 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Trophy, Medal, Crown, TrendingUp, BookOpen } from 'lucide-react'
+import { Trophy, Medal, Crown, TrendingUp, BookOpen, ChevronDown } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { fetchLeaderboard } from '@/services/progressService'
 import { useAuthStore } from '@/store/authStore'
 
-/* Avatar with referrerPolicy fix for Google profile images */
 function Avatar({ url, name, className = 'w-8 h-8' }) {
   const [broken, setBroken] = useState(false)
   const initial = (name || '?')[0].toUpperCase()
-
   if (url && !broken) {
     return (
       <img
-        src={url}
-        alt={name}
+        src={url} alt={name}
         referrerPolicy="no-referrer"
         onError={() => setBroken(true)}
         className={`${className} rounded-full object-cover flex-shrink-0`}
@@ -70,13 +67,58 @@ function LeaderboardRow({ entry, rank, isCurrentUser }) {
           )}
         </div>
         <p className="text-xs text-gray-400 mt-0.5">
-          {entry.total_words} words started · {entry.accuracy}% accuracy
+          {entry.mastered} mastered · {entry.total_words} started · {entry.accuracy}% accuracy
         </p>
       </div>
+      {/* Show points instead of mastered count */}
       <div className="text-right flex-shrink-0">
-        <p className="text-sm font-bold text-gray-900">{entry.mastered}</p>
-        <p className="text-xs text-gray-400">mastered</p>
+        <p className="text-sm font-bold text-gray-900">{entry.score ?? 0}</p>
+        <p className="text-xs text-gray-400">pts</p>
       </div>
+    </div>
+  )
+}
+
+function ScoringExplainer() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="card overflow-hidden">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+      >
+        <p className="text-sm font-semibold text-gray-800">How scores are calculated</p>
+        <ChevronDown
+          size={15}
+          className={`text-gray-400 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <div className="px-5 pb-5 space-y-4 border-t border-gray-100">
+          <div className="space-y-3 pt-3">
+            {[
+              { factor: 'Mastered words × 100', note: 'Primary signal — permanent long-term memory', color: 'bg-green-500' },
+              { factor: 'Words started × 2',    note: 'Effort signal — breadth of vocabulary studied', color: 'bg-blue-400' },
+              { factor: 'Review accuracy × 0.5',note: 'Quality signal — max 50 pts at 100% accuracy', color: 'bg-orange-300' },
+              { factor: 'Exam score × 0.3',     note: 'Bonus — correct exam answers add points', color: 'bg-purple-400' },
+            ].map(({ factor, note, color }) => (
+              <div key={factor} className="flex items-start gap-3">
+                <span className={`w-2 h-2 rounded-full ${color} mt-1.5 flex-shrink-0`} />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">{factor}</p>
+                  <p className="text-xs text-gray-400">{note}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs font-mono text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+            score = mastered×100 + words×2 + accuracy×0.5 + examScore×0.3
+          </p>
+          <p className="text-xs text-gray-400">
+            1 mastered word (100 pts) always outweighs volume or accuracy alone — long-term memory is the decisive factor.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -91,13 +133,17 @@ export default function LeaderboardPage() {
   })
 
   const currentUserRank = data.findIndex(e => e.user_id === user?.id) + 1
+  const topScore = data[0]?.score ?? 0
+  const avgScore = data.length
+    ? Math.round(data.reduce((a, e) => a + (e.score ?? 0), 0) / data.length)
+    : 0
 
   return (
     <AppLayout>
       <div className="max-w-xl mx-auto animate-fade-in space-y-6">
         <div>
           <h1 className="text-2xl font-display font-bold text-gray-900">Leaderboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Ranked by words mastered. Keep learning to climb!</p>
+          <p className="text-sm text-gray-500 mt-1">Ranked by score. Keep learning to climb!</p>
         </div>
 
         {/* Current user rank banner if outside top 10 */}
@@ -121,14 +167,12 @@ export default function LeaderboardPage() {
               <p className="text-xs text-gray-500">Learners</p>
             </div>
             <div className="card p-3 text-center">
-              <p className="text-lg font-display font-bold text-gray-900">{data[0]?.mastered ?? 0}</p>
-              <p className="text-xs text-gray-500">Top score</p>
+              <p className="text-lg font-display font-bold text-gray-900">{topScore}</p>
+              <p className="text-xs text-gray-500">Top pts</p>
             </div>
             <div className="card p-3 text-center">
-              <p className="text-lg font-display font-bold text-gray-900">
-                {Math.round(data.reduce((a, e) => a + e.mastered, 0) / Math.max(data.length, 1))}
-              </p>
-              <p className="text-xs text-gray-500">Avg mastered</p>
+              <p className="text-lg font-display font-bold text-gray-900">{avgScore}</p>
+              <p className="text-xs text-gray-500">Avg pts</p>
             </div>
           </div>
         )}
@@ -136,31 +180,26 @@ export default function LeaderboardPage() {
         {/* Top 3 podium */}
         {!isLoading && data.length >= 3 && (
           <div className="grid grid-cols-3 gap-2 items-end">
-            {/* 2nd */}
             <div className="card p-3 text-center">
               <Avatar url={data[1]?.avatar_url} name={data[1]?.display_name} className="w-10 h-10 mx-auto mb-2" />
               <Medal size={14} className="text-gray-400 mx-auto mb-1" />
               <p className="text-xs font-semibold text-gray-700 truncate">{data[1]?.display_name}</p>
-              <p className="text-lg font-display font-bold text-gray-900 mt-0.5">{data[1]?.mastered}</p>
-              <p className="text-xs text-gray-400">mastered</p>
+              <p className="text-lg font-display font-bold text-gray-900 mt-0.5">{data[1]?.score ?? 0}</p>
+              <p className="text-xs text-gray-400">pts</p>
             </div>
-
-            {/* 1st */}
             <div className="card p-3 text-center border-yellow-200 bg-yellow-50/50 -mt-2">
               <Avatar url={data[0]?.avatar_url} name={data[0]?.display_name} className="w-12 h-12 mx-auto mb-2" />
               <Crown size={15} className="text-yellow-500 mx-auto mb-1" />
               <p className="text-xs font-semibold text-gray-700 truncate">{data[0]?.display_name}</p>
-              <p className="text-xl font-display font-bold text-gray-900 mt-0.5">{data[0]?.mastered}</p>
-              <p className="text-xs text-gray-400">mastered</p>
+              <p className="text-xl font-display font-bold text-gray-900 mt-0.5">{data[0]?.score ?? 0}</p>
+              <p className="text-xs text-gray-400">pts</p>
             </div>
-
-            {/* 3rd */}
             <div className="card p-3 text-center">
               <Avatar url={data[2]?.avatar_url} name={data[2]?.display_name} className="w-10 h-10 mx-auto mb-2" />
               <Medal size={14} className="text-orange-400 mx-auto mb-1" />
               <p className="text-xs font-semibold text-gray-700 truncate">{data[2]?.display_name}</p>
-              <p className="text-lg font-display font-bold text-gray-900 mt-0.5">{data[2]?.mastered}</p>
-              <p className="text-xs text-gray-400">mastered</p>
+              <p className="text-lg font-display font-bold text-gray-900 mt-0.5">{data[2]?.score ?? 0}</p>
+              <p className="text-xs text-gray-400">pts</p>
             </div>
           </div>
         )}
@@ -170,7 +209,6 @@ export default function LeaderboardPage() {
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
             {data.length > 10 ? 'Top 10' : 'All learners'}
           </p>
-
           {isLoading ? (
             <div className="card divide-y divide-gray-100">
               {[...Array(5)].map((_, i) => (
@@ -217,6 +255,8 @@ export default function LeaderboardPage() {
             </div>
           </div>
         )}
+
+        <ScoringExplainer />
       </div>
     </AppLayout>
   )

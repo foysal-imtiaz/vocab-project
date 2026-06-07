@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, BookOpen, GraduationCap,
-  RotateCcw, Trophy, LogOut, Menu, X, ChevronRight,
+  RotateCcw, Trophy, LogOut, Menu, X, ChevronRight, ClipboardList,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/vocabulary',  icon: BookOpen,         label: 'Vocabulary' },
   { to: '/learn',       icon: GraduationCap,    label: 'Learn' },
   { to: '/review',      icon: RotateCcw,        label: 'Review' },
+  { to: '/exam',        icon: ClipboardList,    label: 'Exam' },
   { to: '/leaderboard', icon: Trophy,           label: 'Leaderboard' },
 ]
 
@@ -62,7 +63,7 @@ export default function AppLayout({ children }) {
           <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center flex-shrink-0">
             <span className="text-white font-display font-bold text-sm">V</span>
           </div>
-          <span className="font-display font-bold text-gray-900 text-base">ShobdoKosh</span>
+          <span className="font-display font-bold text-gray-900 text-base">VocabBD</span>
         </Link>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -100,7 +101,7 @@ export default function AppLayout({ children }) {
           </div>
           <button
             onClick={handleSignOut}
-            className="w-full flex justify-center items-center gap-2.5 px-3 py-2 mt-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-150"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-150"
           >
             <LogOut size={15} />
             Sign out
@@ -114,7 +115,7 @@ export default function AppLayout({ children }) {
           <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center">
             <span className="text-white font-display font-bold text-xs">V</span>
           </div>
-          <span className="font-display font-bold text-gray-900 text-sm">ShobdoKosh</span>
+          <span className="font-display font-bold text-gray-900 text-sm">VocabBD</span>
         </Link>
         <button
           onClick={() => setMobileOpen(true)}
@@ -137,7 +138,7 @@ export default function AppLayout({ children }) {
                 <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center">
                   <span className="text-white font-display font-bold text-xs">V</span>
                 </div>
-                <span className="font-display font-bold text-gray-900">ShobdoKosh</span>
+                <span className="font-display font-bold text-gray-900">VocabBD</span>
               </Link>
               <button
                 onClick={() => setMobileOpen(false)}

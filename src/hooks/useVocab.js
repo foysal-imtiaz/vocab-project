@@ -7,6 +7,7 @@ import {
 } from '@/services/wordsService'
 import {
   fetchUserStats,
+  fetchLearnedWords,
   recordCorrectAnswer,
   recordWrongAnswer,
   recordTestAttempt,
@@ -18,13 +19,10 @@ export const queryKeys = {
   words: (params) => ['words', params],
   dueWords: (userId) => ['due-words', userId],
   newWords: (userId, limit) => ['new-words', userId, limit],
+  learnedWords: (userId) => ['learned-words', userId],
   userStats: (userId) => ['user-stats', userId],
 }
 
-/**
- * Hook: paginated vocabulary list.
- * Works for both authenticated (with progress) and public (without) users.
- */
 export function useWords(params) {
   const { user } = useAuthStore()
   return useQuery({
@@ -35,9 +33,6 @@ export function useWords(params) {
   })
 }
 
-/**
- * Hook: words due for review
- */
 export function useDueWords() {
   const { user } = useAuthStore()
   return useQuery({
@@ -47,9 +42,6 @@ export function useDueWords() {
   })
 }
 
-/**
- * Hook: new words for a learning session
- */
 export function useNewWords(limit = 10, enabled = true) {
   const { user } = useAuthStore()
   return useQuery({
@@ -59,9 +51,15 @@ export function useNewWords(limit = 10, enabled = true) {
   })
 }
 
-/**
- * Hook: user dashboard stats
- */
+export function useLearnedWords() {
+  const { user } = useAuthStore()
+  return useQuery({
+    queryKey: queryKeys.learnedWords(user?.id),
+    queryFn: () => fetchLearnedWords(user.id),
+    enabled: !!user,
+  })
+}
+
 export function useUserStats() {
   const { user } = useAuthStore()
   return useQuery({
@@ -71,22 +69,13 @@ export function useUserStats() {
   })
 }
 
-/**
- * Hook: record an MCQ answer
- */
 export function useRecordAnswer() {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ wordId, selectedAnswer, correctAnswer, isCorrect }) => {
-      await recordTestAttempt({
-        userId: user.id,
-        wordId,
-        selectedAnswer,
-        correctAnswer,
-        isCorrect,
-      })
+      await recordTestAttempt({ userId: user.id, wordId, selectedAnswer, correctAnswer, isCorrect })
       if (isCorrect) {
         return recordCorrectAnswer(user.id, wordId)
       } else {
@@ -96,14 +85,12 @@ export function useRecordAnswer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-stats', user?.id] })
       queryClient.invalidateQueries({ queryKey: ['due-words', user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['learned-words', user?.id] })
       queryClient.invalidateQueries({ queryKey: ['words'] })
     },
   })
 }
 
-/**
- * Hook: create a learning session
- */
 export function useCreateSession() {
   const { user } = useAuthStore()
   return useMutation({
@@ -111,15 +98,11 @@ export function useCreateSession() {
   })
 }
 
-/**
- * Hook: complete a learning session
- */
 export function useCompleteSession() {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
   return useMutation({
-    mutationFn: ({ sessionId, wordsStudied }) =>
-      completeLearningSession(sessionId, wordsStudied),
+    mutationFn: ({ sessionId, wordsStudied }) => completeLearningSession(sessionId, wordsStudied),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-stats', user?.id] })
       queryClient.invalidateQueries({ queryKey: ['new-words', user?.id] })
