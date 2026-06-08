@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   RotateCcw, CheckCircle2, Clock, Trophy, BookOpen,
@@ -190,8 +190,17 @@ export default function ReviewPage() {
   const recordAnswer = useRecordAnswer()
 
   const [phase, setPhase] = useState('queue') // queue | reviewing | results
+  const [sessionWords, setSessionWords] = useState([]) // snapshot at session start
   const [currentIndex, setCurrentIndex] = useState(0)
   const [results, setResults] = useState([])
+
+  // Leave warning while reviewing
+  useEffect(() => {
+    if (phase !== 'reviewing') return
+    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [phase])
 
   const overdueCount = dueWords.filter(w => {
     const date = w.progress?.next_review_date
@@ -200,6 +209,7 @@ export default function ReviewPage() {
 
   // Next review date: the earliest next_review_date among all progress entries not yet due
   const handleStartReview = () => {
+    setSessionWords([...dueWords]) // snapshot — insulates session from refetch flashes
     setCurrentIndex(0)
     setResults([])
     setPhase('reviewing')
@@ -208,12 +218,12 @@ export default function ReviewPage() {
   const handleMcqAnswer = ({ wordId, selectedAnswer, correctAnswer, isCorrect }) => {
     const newResults = [
       ...results,
-      { wordId, selectedAnswer, correctAnswer, isCorrect, word: dueWords[currentIndex] },
+      { wordId, selectedAnswer, correctAnswer, isCorrect, word: sessionWords[currentIndex] },
     ]
     setResults(newResults)
     recordAnswer.mutate({ wordId, selectedAnswer, correctAnswer, isCorrect })
 
-    if (currentIndex + 1 >= dueWords.length) {
+    if (currentIndex + 1 >= sessionWords.length) {
       setPhase('results')
     } else {
       setCurrentIndex(i => i + 1)
@@ -345,16 +355,22 @@ export default function ReviewPage() {
         )}
 
         {/* ── MCQ review ── */}
-        {phase === 'reviewing' && dueWords[currentIndex] && (
+        {phase === 'reviewing' && sessionWords[currentIndex] && (
           <div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-6">Review Mode</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Review Mode</p>
+              <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md">
+                ⚠ Leaving will lose progress
+              </span>
+            </div>
+            <div className="mb-6" />
             <McqQuestion
-              key={dueWords[currentIndex].id}
-              word={dueWords[currentIndex]}
+              key={sessionWords[currentIndex].id}
+              word={sessionWords[currentIndex]}
               onAnswer={handleMcqAnswer}
               questionNumber={currentIndex + 1}
-              totalQuestions={dueWords.length}
-              isLast={currentIndex + 1 >= dueWords.length}
+              totalQuestions={sessionWords.length}
+              isLast={currentIndex + 1 >= sessionWords.length}
             />
           </div>
         )}

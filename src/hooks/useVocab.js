@@ -8,9 +8,8 @@ import {
 import {
   fetchUserStats,
   fetchLearnedWords,
-  recordCorrectAnswer,
-  recordWrongAnswer,
   recordTestAttempt,
+  recordAnswerWithTierUpdate,
   createLearningSession,
   completeLearningSession,
 } from '@/services/progressService'
@@ -69,24 +68,38 @@ export function useUserStats() {
   })
 }
 
+/**
+ * For Review and Exam — records attempt AND updates spaced repetition tier.
+ */
 export function useRecordAnswer() {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ wordId, selectedAnswer, correctAnswer, isCorrect }) => {
-      await recordTestAttempt({ userId: user.id, wordId, selectedAnswer, correctAnswer, isCorrect })
-      if (isCorrect) {
-        return recordCorrectAnswer(user.id, wordId)
-      } else {
-        return recordWrongAnswer(user.id, wordId)
-      }
-    },
+    mutationFn: ({ wordId, selectedAnswer, correctAnswer, isCorrect }) =>
+      recordAnswerWithTierUpdate({ userId: user.id, wordId, selectedAnswer, correctAnswer, isCorrect }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-stats', user?.id] })
       queryClient.invalidateQueries({ queryKey: ['due-words', user?.id] })
       queryClient.invalidateQueries({ queryKey: ['learned-words', user?.id] })
       queryClient.invalidateQueries({ queryKey: ['words'] })
+    },
+  })
+}
+
+/**
+ * For Learn session MCQ — records attempt for accuracy stats ONLY.
+ * Does NOT change learning tier (words stay Learned after studying).
+ */
+export function useRecordStudyAttempt() {
+  const { user } = useAuthStore()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ wordId, selectedAnswer, correctAnswer, isCorrect }) =>
+      recordTestAttempt({ userId: user.id, wordId, selectedAnswer, correctAnswer, isCorrect }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-stats', user?.id] })
     },
   })
 }

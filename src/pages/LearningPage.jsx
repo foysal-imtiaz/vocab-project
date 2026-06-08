@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GraduationCap, BookOpen } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import WordStudyCard from '@/features/learning/WordStudyCard'
 import McqQuestion from '@/features/learning/McqQuestion'
 import SessionResults from '@/features/learning/SessionResults'
-import { useRecordAnswer, useCreateSession, useCompleteSession } from '@/hooks/useVocab'
+import { useRecordStudyAttempt, useCreateSession, useCompleteSession } from '@/hooks/useVocab'
 import { fetchNewWords } from '@/services/wordsService'
 import { markWordAsLearned } from '@/services/progressService'
 import { useAuthStore } from '@/store/authStore'
@@ -101,9 +101,17 @@ export default function LearningPage() {
   const [mcqResults, setMcqResults] = useState([])
   const [sessionId, setSessionId] = useState(null)
 
-  const recordAnswer = useRecordAnswer()
+  const recordAnswer = useRecordStudyAttempt() // post-study MCQ: attempt only, no tier change
   const createSession = useCreateSession()
   const completeSession = useCompleteSession()
+
+  // Leave warning while studying or in MCQ
+  useEffect(() => {
+    if (phase !== 'studying' && phase !== 'mcq') return
+    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [phase])
 
   const handleStart = async (size) => {
     setPhase('loading')
@@ -149,7 +157,7 @@ export default function LearningPage() {
       { wordId, selectedAnswer, correctAnswer, isCorrect, word: words[mcqIndex] },
     ]
     setMcqResults(newResults)
-    recordAnswer.mutate({ wordId, selectedAnswer, correctAnswer, isCorrect })
+    recordAnswer.mutate({ wordId, selectedAnswer, correctAnswer, isCorrect }) // stats only
 
     if (mcqIndex + 1 >= words.length) {
       if (sessionId) completeSession.mutate({ sessionId, wordsStudied: words.length })
@@ -190,7 +198,12 @@ export default function LearningPage() {
 
         {phase === 'studying' && words[studyIndex] && (
           <div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-6">Study Mode</p>
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Study Mode</p>
+              <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md">
+                ⚠ Leaving will lose progress
+              </span>
+            </div>
             <WordStudyCard
               word={words[studyIndex]}
               onNext={handleStudyNext}
@@ -205,7 +218,12 @@ export default function LearningPage() {
 
         {phase === 'mcq' && words[mcqIndex] && (
           <div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-6">Quiz Time</p>
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Quiz Time</p>
+              <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md">
+                ⚠ Leaving will lose progress
+              </span>
+            </div>
             <McqQuestion
               key={words[mcqIndex].id}
               word={words[mcqIndex]}

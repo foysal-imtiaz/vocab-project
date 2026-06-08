@@ -127,7 +127,7 @@ export async function recordWrongAnswer(userId, wordId) {
 }
 
 /**
- * Store a test attempt record
+ * Store a test attempt record (does NOT update user_progress tier)
  */
 export async function recordTestAttempt({ userId, wordId, selectedAnswer, correctAnswer, isCorrect }) {
   const { error } = await supabase
@@ -140,6 +140,19 @@ export async function recordTestAttempt({ userId, wordId, selectedAnswer, correc
       is_correct: isCorrect,
     })
   if (error) throw error
+}
+
+/**
+ * Record attempt AND update spaced repetition tier.
+ * Use this in Review and Exam — NOT in the post-study MCQ in Learn.
+ */
+export async function recordAnswerWithTierUpdate({ userId, wordId, selectedAnswer, correctAnswer, isCorrect }) {
+  await recordTestAttempt({ userId, wordId, selectedAnswer, correctAnswer, isCorrect })
+  if (isCorrect) {
+    return recordCorrectAnswer(userId, wordId)
+  } else {
+    return recordWrongAnswer(userId, wordId)
+  }
 }
 
 /**
