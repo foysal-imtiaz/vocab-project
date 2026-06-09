@@ -97,10 +97,10 @@ function ScoringExplainer() {
         <div className="px-5 pb-5 space-y-4 border-t border-gray-100">
           <div className="space-y-3 pt-3">
             {[
-              { factor: 'Mastered words × 100', note: 'Primary signal — permanent long-term memory', color: 'bg-green-500' },
-              { factor: 'Words started × 2',    note: 'Effort signal — breadth of vocabulary studied', color: 'bg-blue-400' },
+              { factor: 'Mastered words × 3',   note: 'Primary signal — permanent long-term memory', color: 'bg-green-500' },
+              { factor: 'Words started × 1.5',  note: 'Effort signal — breadth of vocabulary studied', color: 'bg-blue-400' },
               { factor: 'Review accuracy × 0.5',note: 'Quality signal — max 50 pts at 100% accuracy', color: 'bg-orange-300' },
-              { factor: 'Exam score × 0.3',     note: 'Bonus — correct exam answers add points', color: 'bg-purple-400' },
+              { factor: 'Exam score × 0.5',     note: 'Bonus — exam performance contribution', color: 'bg-purple-400' },
             ].map(({ factor, note, color }) => (
               <div key={factor} className="flex items-start gap-3">
                 <span className={`w-2 h-2 rounded-full ${color} mt-1.5 flex-shrink-0`} />
@@ -112,10 +112,10 @@ function ScoringExplainer() {
             ))}
           </div>
           <p className="text-xs font-mono text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
-            score = mastered×100 + words×2 + accuracy×0.5 + examScore×0.3
+            score = mastered×3 + words×1.5 + accuracy×0.5 + examScore×0.5
           </p>
           <p className="text-xs text-gray-400">
-            1 mastered word (100 pts) always outweighs volume or accuracy alone — long-term memory is the decisive factor.
+            Mastered words carry the highest per-word weight. Volume, accuracy, and exam performance all contribute but cannot override consistent mastery.
           </p>
         </div>
       )}

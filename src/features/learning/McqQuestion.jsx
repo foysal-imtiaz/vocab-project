@@ -1,18 +1,28 @@
 import { useState, useMemo } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { buildMcqOptions } from '@/lib/spacedRepetition'
 
-export default function McqQuestion({ word, onAnswer, questionNumber, totalQuestions, isLast }) {
+export default function McqQuestion({
+  word,
+  onAnswer,
+  onBack,
+  questionNumber,
+  totalQuestions,
+  isFirst = true,
+  isLast = false,
+}) {
   const [selected, setSelected] = useState(null)
 
-  // Memoized so options never reshuffle between renders — fixes jumping bug
+  // Memoized so options never reshuffle mid-question — fixes jumping bug
   const { options, correctAnswer } = useMemo(() => buildMcqOptions(word), [word.id])
 
   const handleNext = () => {
     if (!selected) return
-    const isCorrect = selected === correctAnswer
-    // Pass answer to parent — no feedback shown here, results revealed at end
-    onAnswer({ wordId: word.id, selectedAnswer: selected, correctAnswer, isCorrect })
+    onAnswer({ wordId: word.id, selectedAnswer: selected, correctAnswer, isCorrect: selected === correctAnswer })
+  }
+
+  const handleBack = () => {
+    if (onBack) onBack()
   }
 
   const getOptionStyle = (option) =>
@@ -60,16 +70,29 @@ export default function McqQuestion({ word, onAnswer, questionNumber, totalQuest
         ))}
       </div>
 
-      {/* Next / Submit */}
-      <button
-        onClick={handleNext}
-        disabled={!selected}
-        className="btn-primary w-full py-3 flex items-center justify-center gap-2
-          disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        {isLast ? 'Submit Quiz' : 'Next'}
-        <ArrowRight size={15} />
-      </button>
+      {/* Back + Next buttons */}
+      <div className="flex gap-3">
+        {onBack && (
+          <button
+            onClick={handleBack}
+            disabled={isFirst}
+            className="btn-secondary flex items-center justify-center gap-2 px-5 py-3
+              disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <ArrowLeft size={15} />
+            Back
+          </button>
+        )}
+        <button
+          onClick={handleNext}
+          disabled={!selected}
+          className="btn-primary flex-1 flex items-center justify-center gap-2 py-3
+            disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {isLast ? 'Submit Quiz' : 'Next'}
+          <ArrowRight size={15} />
+        </button>
+      </div>
     </div>
   )
 }

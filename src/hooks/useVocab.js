@@ -8,6 +8,7 @@ import {
 import {
   fetchUserStats,
   fetchLearnedWords,
+  fetchMasteredWords,
   recordTestAttempt,
   recordAnswerWithTierUpdate,
   createLearningSession,
@@ -19,7 +20,17 @@ export const queryKeys = {
   dueWords: (userId) => ['due-words', userId],
   newWords: (userId, limit) => ['new-words', userId, limit],
   learnedWords: (userId) => ['learned-words', userId],
+  masteredWords: (userId) => ['mastered-words', userId],
   userStats: (userId) => ['user-stats', userId],
+}
+
+// Invalidate ALL user-related queries at once — call this after any progress change
+function invalidateAll(queryClient, userId) {
+  queryClient.invalidateQueries({ queryKey: ['user-stats', userId] })
+  queryClient.invalidateQueries({ queryKey: ['due-words', userId] })
+  queryClient.invalidateQueries({ queryKey: ['learned-words', userId] })
+  queryClient.invalidateQueries({ queryKey: ['new-words', userId] })
+  queryClient.invalidateQueries({ queryKey: ['words'] })
 }
 
 export function useWords(params) {
@@ -59,6 +70,15 @@ export function useLearnedWords() {
   })
 }
 
+export function useMasteredWords() {
+  const { user } = useAuthStore()
+  return useQuery({
+    queryKey: queryKeys.masteredWords(user?.id),
+    queryFn: () => fetchMasteredWords(user.id),
+    enabled: !!user,
+  })
+}
+
 export function useUserStats() {
   const { user } = useAuthStore()
   return useQuery({
@@ -78,12 +98,7 @@ export function useRecordAnswer() {
   return useMutation({
     mutationFn: ({ wordId, selectedAnswer, correctAnswer, isCorrect }) =>
       recordAnswerWithTierUpdate({ userId: user.id, wordId, selectedAnswer, correctAnswer, isCorrect }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-stats', user?.id] })
-      queryClient.invalidateQueries({ queryKey: ['due-words', user?.id] })
-      queryClient.invalidateQueries({ queryKey: ['learned-words', user?.id] })
-      queryClient.invalidateQueries({ queryKey: ['words'] })
-    },
+    onSuccess: () => invalidateAll(queryClient, user?.id),
   })
 }
 
@@ -98,9 +113,7 @@ export function useRecordStudyAttempt() {
   return useMutation({
     mutationFn: ({ wordId, selectedAnswer, correctAnswer, isCorrect }) =>
       recordTestAttempt({ userId: user.id, wordId, selectedAnswer, correctAnswer, isCorrect }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-stats', user?.id] })
-    },
+    onSuccess: () => invalidateAll(queryClient, user?.id),
   })
 }
 
@@ -116,9 +129,6 @@ export function useCompleteSession() {
   const { user } = useAuthStore()
   return useMutation({
     mutationFn: ({ sessionId, wordsStudied }) => completeLearningSession(sessionId, wordsStudied),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-stats', user?.id] })
-      queryClient.invalidateQueries({ queryKey: ['new-words', user?.id] })
-    },
+    onSuccess: () => invalidateAll(queryClient, user?.id),
   })
 }

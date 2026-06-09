@@ -129,20 +129,13 @@ function HomeLeaderboard({ onLogin }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-display font-bold text-gray-900">
-          Leaderboard
-        </h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Top learners ranked by words mastered
-        </p>
+        <h2 className="text-lg font-display font-bold text-gray-900">Leaderboard</h2>
+        <p className="text-sm text-gray-500 mt-0.5">Top learners ranked by words mastered</p>
       </div>
       <div className="card overflow-hidden">
         {loading ? (
           [...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-0 animate-pulse"
-            >
+            <div key={i} className="px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-0 animate-pulse">
               <div className="w-5 h-5 bg-gray-100 rounded" />
               <div className="w-7 h-7 bg-gray-100 rounded-full" />
               <div className="flex-1 h-3 bg-gray-100 rounded" />
@@ -152,59 +145,24 @@ function HomeLeaderboard({ onLogin }) {
         ) : data.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-sm text-gray-400">No learners yet.</p>
-            <button
-              onClick={onLogin}
-              className="mt-2 text-sm text-brand-600 font-medium hover:underline"
-            >
-              Be the first →
-            </button>
+            <button onClick={onLogin} className="mt-2 text-sm text-brand-600 font-medium hover:underline">Be the first →</button>
           </div>
         ) : (
           <>
             {data.map((entry, i) => (
-              <div
-                key={entry.user_id}
-                className={`px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-0 ${
-                  i === 0 ? "bg-yellow-50/50" : ""
-                }`}
-              >
-                <div className="w-5 flex items-center justify-center flex-shrink-0">
-                  {rankIcon(i)}
-                </div>
-
-                <Avatar
-                  url={entry.avatar_url}
-                  name={entry.display_name}
-                  size="sm"
-                />
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">
-                    {entry.display_name || "Anonymous"}
-                  </p>
-
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {entry.total_words} words learned · {entry.accuracy}%
-                    accuracy
-                  </p>
-                </div>
-
+              <div key={entry.user_id} className={`px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-0 ${i === 0 ? 'bg-yellow-50/50' : ''}`}>
+                <div className="w-5 flex items-center justify-center flex-shrink-0">{rankIcon(i)}</div>
+                <Avatar url={entry.avatar_url} name={entry.display_name} size="sm" />
+                <p className="flex-1 text-sm font-medium text-gray-800 truncate">{entry.display_name || 'Anonymous'}</p>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold text-gray-900">
-                    {entry.mastered}
-                  </p>
+                  <p className="text-sm font-bold text-gray-900">{entry.mastered}</p>
                   <p className="text-xs text-gray-400">mastered</p>
                 </div>
               </div>
             ))}
             <div className="px-4 py-2.5 bg-gray-50 flex items-center justify-between">
-              <p className="text-xs text-gray-400">
-                Sign in to appear on the leaderboard
-              </p>
-              <button
-                onClick={onLogin}
-                className="text-xs font-medium text-brand-600 hover:underline flex items-center gap-1"
-              >
+              <p className="text-xs text-gray-400">Sign in to appear on the leaderboard</p>
+              <button onClick={onLogin} className="text-xs font-medium text-brand-600 hover:underline flex items-center gap-1">
                 Sign in <ArrowRight size={11} />
               </button>
             </div>
@@ -212,11 +170,11 @@ function HomeLeaderboard({ onLogin }) {
         )}
       </div>
     </div>
-  );
+  )
 }
 
 /* ── Main ─────────────────────────────────────────────────────────────────── */
-const PAGE_SIZE = 5
+const PAGE_SIZE = 10
 
 export default function HomePage() {
   const { user, signInWithGoogle } = useAuthStore()
@@ -291,7 +249,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
-              <span className="text-white font-display font-bold text-xs">V</span>
+              <span className="text-white font-display font-bold text-xs">S</span>
             </div>
             <span className="font-display font-bold text-gray-900">ShobdoKosh</span>
           </div>
@@ -314,11 +272,11 @@ export default function HomePage() {
             Free to browse · Sign in to track progress
           </div>
           <h1 className="text-4xl sm:text-5xl font-display font-bold text-gray-900 leading-tight">
-            Learn Words<br />
+            Learn English<br />
             <span className="text-brand-600">the smart way</span>
           </h1>
           <p className="text-base text-gray-500 leading-relaxed">
-            Ace the vocabulary section of any competitive exam. Spaced repetition, MCQ tests,
+            Vocabulary built for Bengali speakers. Spaced repetition, MCQ tests,
             and progress tracking — all in one place.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
@@ -421,12 +379,20 @@ export default function HomePage() {
 
               {/* Footer row */}
               {!loadingWords && !fetchError && (
-                <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end">
+                <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                  <p className="text-xs text-gray-400">
+                    {hasMore
+                      ? `Showing ${PAGE_SIZE} of ${totalWords} words`
+                      : search.trim() && searchResults.length > 0
+                        ? `${searchResults.length} result${searchResults.length !== 1 ? 's' : ''}`
+                        : `All ${displayWords.length} words shown`
+                    }
+                  </p>
                   <button
                     onClick={() => navigate('/vocabulary')}
                     className="text-xs font-medium text-brand-600 hover:underline flex items-center gap-1"
                   >
-                    {hasMore ? `View all words` : 'Full list'} <ArrowRight size={11} />
+                    {hasMore ? `View all ${totalWords} words` : 'Full list'} <ArrowRight size={11} />
                   </button>
                 </div>
               )}
@@ -441,7 +407,7 @@ export default function HomePage() {
 
         {/* Footer */}
         <div className="text-center pb-4">
-          <p className="text-xs text-gray-400">Vocabulary · Curated list for exam preparation</p>
+          <p className="text-xs text-gray-400">ShobdoKosh · Made for Bengali speakers learning English</p>
         </div>
       </div>
     </div>

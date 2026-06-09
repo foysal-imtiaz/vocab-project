@@ -61,9 +61,9 @@ export default function AppLayout({ children }) {
           className="px-5 py-5 border-b border-gray-100 flex items-center gap-2.5 hover:bg-gray-50 transition-colors"
         >
           <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-display font-bold text-sm">V</span>
+            <span className="text-white font-display font-bold text-sm">S</span>
           </div>
-          <span className="font-display font-bold text-gray-900 text-base">VocabBD</span>
+          <span className="font-display font-bold text-gray-900 text-base">ShobdoKosh</span>
         </Link>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -113,9 +113,9 @@ export default function AppLayout({ children }) {
       <header className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center">
-            <span className="text-white font-display font-bold text-xs">V</span>
+            <span className="text-white font-display font-bold text-xs">S</span>
           </div>
-          <span className="font-display font-bold text-gray-900 text-sm">VocabBD</span>
+          <span className="font-display font-bold text-gray-900 text-sm">ShobdoKosh</span>
         </Link>
         <button
           onClick={() => setMobileOpen(true)}
@@ -136,9 +136,9 @@ export default function AppLayout({ children }) {
             <div className="px-4 py-4 flex items-center justify-between border-b border-gray-100">
               <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center">
-                  <span className="text-white font-display font-bold text-xs">V</span>
+                  <span className="text-white font-display font-bold text-xs">S</span>
                 </div>
-                <span className="font-display font-bold text-gray-900">VocabBD</span>
+                <span className="font-display font-bold text-gray-900">ShobdoKosh</span>
               </Link>
               <button
                 onClick={() => setMobileOpen(false)}

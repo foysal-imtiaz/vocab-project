@@ -265,3 +265,21 @@ export async function fetchLeaderboard() {
   if (error) throw error
   return data || []
 }
+
+/**
+ * Fetch mastered words (tier 3) for mastered exam
+ */
+export async function fetchMasteredWords(userId) {
+  const { data, error } = await supabase
+    .from('user_progress')
+    .select('*, words(*)')
+    .eq('user_id', userId)
+    .eq('learning_tier', 3)
+    .order('last_reviewed_at', { ascending: true })
+
+  if (error) throw error
+  return (data || []).map((p) => ({
+    ...p.words,
+    progress: { ...p, words: undefined },
+  }))
+}

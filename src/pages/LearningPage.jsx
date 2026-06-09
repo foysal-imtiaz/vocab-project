@@ -151,6 +151,12 @@ export default function LearningPage() {
     setStudyIndex((i) => Math.max(0, i - 1))
   }
 
+  const handleMcqBack = () => {
+    // Remove the last recorded result when going back
+    setMcqResults((prev) => prev.slice(0, -1))
+    setMcqIndex((i) => Math.max(0, i - 1))
+  }
+
   const handleMcqAnswer = ({ wordId, selectedAnswer, correctAnswer, isCorrect }) => {
     const newResults = [
       ...mcqResults,
@@ -228,8 +234,10 @@ export default function LearningPage() {
               key={words[mcqIndex].id}
               word={words[mcqIndex]}
               onAnswer={handleMcqAnswer}
+              onBack={handleMcqBack}
               questionNumber={mcqIndex + 1}
               totalQuestions={words.length}
+              isFirst={mcqIndex === 0}
               isLast={mcqIndex + 1 >= words.length}
             />
           </div>
