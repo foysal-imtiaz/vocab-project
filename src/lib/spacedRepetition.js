@@ -101,10 +101,16 @@ export function buildMcqOptions(word) {
  * Exam time limits in seconds based on question count
  */
 export const EXAM_TIME_LIMITS = {
-  20: 7 * 60,   // 7 minutes
-  30: 11 * 60,  // 11 minutes
-  40: 15 * 60,  // 15 minutes
-  50: 22 * 60,  // 22 minutes
+  20: 7 * 60,    // 7 minutes
+  30: 11 * 60,   // 11 minutes
+  40: 15 * 60,   // 15 minutes
+  50: 22 * 60,   // 22 minutes
+  80: 35 * 60,   // 35 minutes
+  100: 45 * 60,  // 45 minutes
 }
 
+// Standard exam sizes (Learned + Advanced words)
 export const EXAM_SIZES = [20, 30, 40, 50]
+
+// Mastered exam sizes — 50, 80, 100, or all available
+export const MASTERED_EXAM_SIZES = [50, 80, 100]

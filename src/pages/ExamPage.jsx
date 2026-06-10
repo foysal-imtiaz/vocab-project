@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { useLearnedWords, useMasteredWords, useRecordAnswer } from '@/hooks/useVocab'
-import { buildMcqOptions, EXAM_SIZES, EXAM_TIME_LIMITS, shuffleArray } from '@/lib/spacedRepetition'
+import { buildMcqOptions, EXAM_SIZES, MASTERED_EXAM_SIZES, EXAM_TIME_LIMITS, shuffleArray } from '@/lib/spacedRepetition'
 
 const MASTERED_UNLOCK_THRESHOLD = 100 // unlock mastered exam after this many mastered words
 
@@ -237,10 +237,26 @@ export default function ExamPage() {
   const canMasteredExam = masteredCount >= MASTERED_UNLOCK_THRESHOLD
 
   const activePool = examType === 'mastered' ? allMasteredWords : allLearnedWords
-  const availableSizes = EXAM_SIZES.filter(s => s <= activePool.length)
+
+  // For mastered exam: 50, 80, 100, or 'all'. For standard: 20, 30, 40, 50.
+  const masteredSizeOptions = [
+    ...MASTERED_EXAM_SIZES.filter(s => s <= activePool.length),
+    ...(activePool.length > 0 ? ['all'] : []),
+  ]
+  const availableSizes = examType === 'mastered'
+    ? masteredSizeOptions
+    : EXAM_SIZES.filter(s => s <= activePool.length)
+
+  // Resolve 'all' to actual count for use in exam logic
+  const resolvedExamSize = examSize === 'all' ? activePool.length : examSize
 
   useEffect(() => {
-    if (availableSizes.length > 0) setExamSize(availableSizes[0])
+    if (examType === 'mastered' && masteredSizeOptions.length > 0) {
+      setExamSize(masteredSizeOptions[0])
+    } else if (examType === 'standard') {
+      const std = EXAM_SIZES.filter(s => s <= activePool.length)
+      if (std.length > 0) setExamSize(std[0])
+    }
   }, [activePool.length, examType])
 
   // Leave warning during exam
@@ -252,14 +268,19 @@ export default function ExamPage() {
   }, [phase])
 
   const startExam = () => {
-    const shuffled = shuffleArray(activePool).slice(0, examSize)
+    const count = examSize === 'all' ? activePool.length : examSize
+    const shuffled = shuffleArray(activePool).slice(0, count)
     setQuestions(shuffled)
     setCurrentIndex(0)
     const initial = {}
     shuffled.forEach(w => { initial[w.id] = null })
     setAnswers(initial)
     setResults([])
-    setSecondsLeft(EXAM_TIME_LIMITS[examSize])
+    // For 'all', use nearest defined time limit or scale at ~22s per question
+    const timeKey = [20, 30, 40, 50, 80, 100].reduce((prev, curr) =>
+      Math.abs(curr - count) < Math.abs(prev - count) ? curr : prev
+    )
+    setSecondsLeft(EXAM_TIME_LIMITS[timeKey] || Math.round(count * 22))
     startTimeRef.current = Date.now()
     setPhase('exam')
   }
@@ -448,26 +469,30 @@ export default function ExamPage() {
                     <div>
                       <p className="text-sm font-semibold text-gray-700 mb-3">Number of questions</p>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {EXAM_SIZES.map(size => {
-                          const isAvailable = size <= activePool.length
+                        {availableSizes.map(size => {
+                          const isAll = size === 'all'
+                          const actualCount = isAll ? activePool.length : size
+                          const isSelected = examSize === size
+                          const activeColor = examType === 'mastered' ? 'border-green-500 bg-green-50' : 'border-brand-500 bg-brand-50'
+                          const activeText = examType === 'mastered' ? 'text-green-700' : 'text-brand-700'
+                          // time label
+                          const nearestKey = [20,30,40,50,80,100].reduce((p,c) =>
+                            Math.abs(c-actualCount)<Math.abs(p-actualCount)?c:p)
+                          const timeLabel = isAll
+                            ? `~${Math.round(actualCount * 22 / 60)} min`
+                            : `${EXAM_TIME_LIMITS[size] / 60} min`
                           return (
                             <button
-                              key={size}
-                              onClick={() => isAvailable && setExamSize(size)}
-                              disabled={!isAvailable}
+                              key={String(size)}
+                              onClick={() => setExamSize(size)}
                               className={`py-3 rounded-lg border-2 text-center transition-colors ${
-                                examSize === size && isAvailable
-                                  ? examType === 'mastered' ? 'border-green-500 bg-green-50' : 'border-brand-500 bg-brand-50'
-                                  : isAvailable ? 'border-gray-200 hover:border-gray-300'
-                                  : 'border-gray-100 opacity-40 cursor-not-allowed'
+                                isSelected ? activeColor : 'border-gray-200 hover:border-gray-300'
                               }`}
                             >
-                              <p className={`text-sm font-semibold ${
-                                examSize === size && isAvailable
-                                  ? examType === 'mastered' ? 'text-green-700' : 'text-brand-700'
-                                  : 'text-gray-700'
-                              }`}>{size} words</p>
-                              <p className="text-xs text-gray-400 mt-0.5">{EXAM_TIME_LIMITS[size] / 60} min</p>
+                              <p className={`text-sm font-semibold ${isSelected ? activeText : 'text-gray-700'}`}>
+                                {isAll ? `All (${actualCount})` : `${size} words`}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-0.5">{timeLabel}</p>
                             </button>
                           )
                         })}
@@ -499,7 +524,7 @@ export default function ExamPage() {
                       }`}
                     >
                       <Clock size={15} />
-                      Start {examType === 'mastered' ? 'Mastered' : ''} Exam — {examSize} questions
+                      Start {examType === 'mastered' ? 'Mastered' : ''} Exam — {resolvedExamSize} questions
                     </button>
                   </div>
                 )}
@@ -563,8 +588,8 @@ export default function ExamPage() {
             </div>
             <ExamResults
               results={results}
-              timeTaken={EXAM_TIME_LIMITS[examSize]}
-              examSize={examSize}
+              timeTaken={EXAM_TIME_LIMITS[typeof examSize === 'number' ? examSize : 50] || 0}
+              examSize={resolvedExamSize}
               examType={examType}
               onRetry={handleRetry}
               onDone={() => navigate('/dashboard')}
@@ -576,7 +601,7 @@ export default function ExamPage() {
           <ExamResults
             results={results}
             timeTaken={timeTaken}
-            examSize={examSize}
+            examSize={resolvedExamSize}
             examType={examType}
             onRetry={handleRetry}
             onDone={() => navigate('/dashboard')}

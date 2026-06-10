@@ -113,11 +113,12 @@ function HomeLeaderboard({ onLogin }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     fetchLeaderboard()
       .then(rows => setData(rows.slice(0, 5)))
       .catch(() => setData([]))
       .finally(() => setLoading(false))
-  }, [])
+  }, []) // fetches fresh on every mount since staleTime=0 in QueryClient
 
   const rankIcon = (i) => {
     if (i === 0) return <Crown size={13} className="text-yellow-500" />
@@ -155,8 +156,8 @@ function HomeLeaderboard({ onLogin }) {
                 <Avatar url={entry.avatar_url} name={entry.display_name} size="sm" />
                 <p className="flex-1 text-sm font-medium text-gray-800 truncate">{entry.display_name || 'Anonymous'}</p>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold text-gray-900">{entry.mastered}</p>
-                  <p className="text-xs text-gray-400">mastered</p>
+                  <p className="text-sm font-bold text-gray-900">{entry.score ?? 0}</p>
+                  <p className="text-xs text-gray-400">pts</p>
                 </div>
               </div>
             ))}
@@ -174,7 +175,7 @@ function HomeLeaderboard({ onLogin }) {
 }
 
 /* ── Main ─────────────────────────────────────────────────────────────────── */
-const PAGE_SIZE = 10
+const PAGE_SIZE = 5
 
 export default function HomePage() {
   const { user, signInWithGoogle } = useAuthStore()
