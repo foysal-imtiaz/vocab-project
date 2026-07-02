@@ -163,10 +163,18 @@ export default function LearningPage() {
       { wordId, selectedAnswer, correctAnswer, isCorrect, word: words[mcqIndex] },
     ]
     setMcqResults(newResults)
-    recordAnswer.mutate({ wordId, selectedAnswer, correctAnswer, isCorrect }) // stats only
 
     if (mcqIndex + 1 >= words.length) {
       if (sessionId) completeSession.mutate({ sessionId, wordsStudied: words.length })
+      // Record all final answers to avoid duplicates if the user navigated back
+      newResults.forEach((res) => {
+        recordAnswer.mutate({
+          wordId: res.wordId,
+          selectedAnswer: res.selectedAnswer,
+          correctAnswer: res.correctAnswer,
+          isCorrect: res.isCorrect,
+        })
+      })
       setPhase('results')
     } else {
       setMcqIndex((i) => i + 1)

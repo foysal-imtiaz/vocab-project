@@ -11,7 +11,7 @@ export async function fetchWordsWithProgress({
   search = '',
   difficulty = '',
 }) {
-  // ── Public (no user) — plain words only ──────────────────────────────────
+  // public functions without login
   if (!userId) {
     let q = supabase
       .from('words')
@@ -34,7 +34,7 @@ export async function fetchWordsWithProgress({
     }
   }
 
-  // ── Authenticated — words + progress join ─────────────────────────────────
+  // auth functions (join with progress)
   let query = supabase
     .from('words')
     .select(

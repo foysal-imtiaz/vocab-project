@@ -10,7 +10,7 @@ import { buildMcqOptions, EXAM_SIZES, MASTERED_EXAM_SIZES, EXAM_TIME_LIMITS, shu
 
 const MASTERED_UNLOCK_THRESHOLD = 100 // unlock mastered exam after this many mastered words
 
-/* ── Timer ──────────────────────────────────────────────────────────────── */
+/* timer component */
 function Timer({ secondsLeft }) {
   const mins = Math.floor(secondsLeft / 60)
   const secs = secondsLeft % 60
@@ -27,7 +27,7 @@ function Timer({ secondsLeft }) {
   )
 }
 
-/* ── Leave warning ──────────────────────────────────────────────────────── */
+/* leave warning message */
 function LeaveWarning() {
   return (
     <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
@@ -37,7 +37,7 @@ function LeaveWarning() {
   )
 }
 
-/* ── MCQ question ───────────────────────────────────────────────────────── */
+/* mcq question component */
 function ExamQuestion({ word, selected, onSelect }) {
   const { options } = useMemo(() => buildMcqOptions(word), [word.id])
   return (
@@ -67,38 +67,49 @@ function ExamQuestion({ word, selected, onSelect }) {
   )
 }
 
-/* ── Wrong word card ────────────────────────────────────────────────────── */
-function WrongWordCard({ result }) {
+/* word card for results */
+function ResultWordCard({ result }) {
   const [expanded, setExpanded] = useState(false)
   const word = result.word || {}
+  const isCorrect = result.isCorrect
+
   const examples = Array.isArray(word.example_sentences) ? word.example_sentences
     : word.example_sentences ? [word.example_sentences] : []
   const synonyms = Array.isArray(word.english_definition_synonyms) ? word.english_definition_synonyms
     : word.english_definition_synonyms ? word.english_definition_synonyms.split(',').map(s => s.trim()) : []
 
+  const borderColor = isCorrect ? 'border-green-100' : 'border-red-100'
+  const bgColor = isCorrect ? 'bg-green-50/40 hover:bg-green-50' : 'bg-red-50/40 hover:bg-red-50'
+  const iconColor = isCorrect ? 'text-green-500' : 'text-red-400'
+  const Icon = isCorrect ? CheckCircle2 : XCircle
+
   return (
-    <div className="border border-red-100 rounded-xl overflow-hidden">
+    <div className={`border ${borderColor} rounded-xl overflow-hidden`}>
       <button
         onClick={() => setExpanded(v => !v)}
-        className="w-full px-4 py-3 flex items-center gap-3 text-left bg-red-50/40 hover:bg-red-50 transition-colors"
+        className={`w-full px-4 py-3 flex items-center gap-3 text-left ${bgColor} transition-colors`}
       >
-        <XCircle size={14} className="text-red-400 flex-shrink-0" />
+        <Icon size={14} className={`${iconColor} flex-shrink-0`} />
         <div className="flex-1 min-w-0">
           <span className="text-sm font-semibold text-gray-900">{word.english_word}</span>
           {word.part_of_speech && <span className="ml-2 text-xs text-gray-400 italic">{word.part_of_speech}</span>}
           <p className="text-xs text-gray-500 mt-0.5">
-            Correct: <span className="font-medium text-gray-700">{result.correctAnswer}</span>
-            <span className="mx-1.5 text-gray-300">·</span>
-            {result.selectedAnswer
-              ? <span className="text-red-500">You chose: {result.selectedAnswer}</span>
-              : <span className="text-gray-400 italic">Skipped</span>
-            }
+            Meaning: <span className="font-medium text-gray-700">{result.correctAnswer}</span>
+            {!isCorrect && (
+              <>
+                <span className="mx-1.5 text-gray-300">·</span>
+                {result.selectedAnswer
+                  ? <span className="text-red-500">You chose: {result.selectedAnswer}</span>
+                  : <span className="text-gray-400 italic">Skipped</span>
+                }
+              </>
+            )}
           </p>
         </div>
         <ChevronDown size={15} className={`text-gray-400 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
       </button>
       {expanded && (
-        <div className="px-4 py-4 space-y-3 border-t border-red-100 bg-white">
+        <div className={`px-4 py-4 space-y-3 border-t ${borderColor} bg-white`}>
           <div>
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Meaning</p>
             <p className="text-sm font-medium text-gray-900">{word.bangla_meaning}</p>
@@ -123,7 +134,7 @@ function WrongWordCard({ result }) {
   )
 }
 
-/* ── Results ────────────────────────────────────────────────────────────── */
+/* exam results screen */
 function ExamResults({ results, timeTaken, examSize, examType, onRetry, onDone }) {
   const correct = results.filter(r => r.isCorrect).length
   const wrong = results.filter(r => !r.isCorrect && r.selectedAnswer !== null).length
@@ -179,14 +190,10 @@ function ExamResults({ results, timeTaken, examSize, examType, onRetry, onDone }
 
       {correct > 0 && (
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">✓ Correct ({correct})</p>
-          <div className="card divide-y divide-gray-100">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">✓ Correct ({correct}) — tap to review</p>
+          <div className="space-y-2">
             {results.filter(r => r.isCorrect).map((r, i) => (
-              <div key={i} className="px-4 py-2.5 flex items-center gap-2.5">
-                <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
-                <span className="text-sm font-medium text-gray-900">{r.word?.english_word}</span>
-                <span className="text-xs text-gray-400 ml-auto">{r.correctAnswer}</span>
-              </div>
+              <ResultWordCard key={i} result={r} />
             ))}
           </div>
         </div>
@@ -198,7 +205,7 @@ function ExamResults({ results, timeTaken, examSize, examType, onRetry, onDone }
             ✗ Needs Review ({wrongResults.length}) — tap to study
           </p>
           <div className="space-y-2">
-            {wrongResults.map((r, i) => <WrongWordCard key={i} result={r} />)}
+            {wrongResults.map((r, i) => <ResultWordCard key={i} result={r} />)}
           </div>
         </div>
       )}
@@ -211,7 +218,7 @@ function ExamResults({ results, timeTaken, examSize, examType, onRetry, onDone }
   )
 }
 
-/* ── Main ExamPage ───────────────────────────────────────────────────────── */
+/* main exam page */
 export default function ExamPage() {
   const navigate = useNavigate()
   const { data: allLearnedWords = [], isLoading: loadingLearned } = useLearnedWords()
@@ -224,6 +231,8 @@ export default function ExamPage() {
   const [questions, setQuestions] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState({})
+  const answersRef = useRef(answers)
+  useEffect(() => { answersRef.current = answers }, [answers])
   const [results, setResults] = useState([])
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [timeTaken, setTimeTaken] = useState(0)
@@ -299,8 +308,8 @@ export default function ExamPage() {
   const handleTimeUp = useCallback(() => {
     const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
     setTimeTaken(elapsed)
-    submitExam(answers, elapsed, true)
-  }, [answers, questions])
+    submitExam(answersRef.current, elapsed, true)
+  }, [questions])
 
   const handleSelectAnswer = (option) => {
     setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: option }))
@@ -344,7 +353,7 @@ export default function ExamPage() {
     <AppLayout>
       <div className="max-w-xl mx-auto">
 
-        {/* ── Setup ── */}
+        {/* setup screen */}
         {phase === 'setup' && (
           <div className="animate-fade-in space-y-6">
             <div>
@@ -533,7 +542,7 @@ export default function ExamPage() {
           </div>
         )}
 
-        {/* ── Active exam ── */}
+        {/* active exam screen */}
         {phase === 'exam' && currentWord && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -576,7 +585,7 @@ export default function ExamPage() {
           </div>
         )}
 
-        {/* ── Time up ── */}
+        {/* time up screen */}
         {phase === 'timeout' && (
           <div className="space-y-6">
             <div className="card p-4 flex items-center gap-3 border-red-200 bg-red-50">

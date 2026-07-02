@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { fetchLeaderboard } from '@/services/progressService'
 import { useDebounce } from '@/hooks/useDebounce'
 
-/* ── helpers ──────────────────────────────────────────────────────────────── */
+/* helper components */
 
 function GoogleIcon() {
   return (
@@ -174,7 +174,7 @@ function HomeLeaderboard({ onLogin }) {
   )
 }
 
-/* ── Main ─────────────────────────────────────────────────────────────────── */
+/* main homepage component */
 const PAGE_SIZE = 5
 
 export default function HomePage() {

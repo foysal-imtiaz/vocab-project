@@ -54,7 +54,7 @@ export default function AppLayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
 
-      {/* ── Desktop Sidebar ── */}
+      {/* desktop sidebar */}
       <aside className="hidden md:flex flex-col w-56 bg-white border-r border-gray-200 fixed h-full z-20">
         <Link
           to="/dashboard"
@@ -109,7 +109,7 @@ export default function AppLayout({ children }) {
         </div>
       </aside>
 
-      {/* ── Mobile Header ── */}
+      {/* mobile header */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center">
@@ -125,7 +125,7 @@ export default function AppLayout({ children }) {
         </button>
       </header>
 
-      {/* ── Mobile Drawer ── */}
+      {/* mobile drawer */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div
@@ -188,7 +188,7 @@ export default function AppLayout({ children }) {
         </div>
       )}
 
-      {/* ── Main Content ── */}
+      {/* main content */}
       <main className="flex-1 md:ml-56 pt-14 md:pt-0 min-h-screen">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 md:py-8">
           {children}

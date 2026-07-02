@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trophy, RotateCcw, Home, CheckCircle2, XCircle, ChevronDown } from 'lucide-react'
 
-// Inline mini word card for wrong answers — no progress badges needed
-function WrongWordCard({ result }) {
+// Inline mini word card for results
+function ResultWordCard({ result }) {
   const [expanded, setExpanded] = useState(false)
   const word = result.word || {}
+  const isCorrect = result.isCorrect
 
   const examples = Array.isArray(word.example_sentences)
     ? word.example_sentences
@@ -17,23 +18,36 @@ function WrongWordCard({ result }) {
         ? word.english_definition_synonyms.split(',').map((s) => s.trim())
         : []
 
+  const borderColor = isCorrect ? 'border-green-100' : 'border-red-100'
+  const bgColor = isCorrect ? 'bg-green-50/40 hover:bg-green-50' : 'bg-red-50/40 hover:bg-red-50'
+  const iconColor = isCorrect ? 'text-green-500' : 'text-red-400'
+  const Icon = isCorrect ? CheckCircle2 : XCircle
+
   return (
-    <div className="border border-red-100 rounded-xl overflow-hidden">
+    <div className={`border ${borderColor} rounded-xl overflow-hidden`}>
       {/* Header row */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full px-4 py-3 flex items-center gap-3 text-left bg-red-50/40 hover:bg-red-50 transition-colors"
+        className={`w-full px-4 py-3 flex items-center gap-3 text-left ${bgColor} transition-colors`}
       >
-        <XCircle size={14} className="text-red-400 flex-shrink-0" />
+        <Icon size={14} className={`${iconColor} flex-shrink-0`} />
         <div className="flex-1 min-w-0">
           <span className="text-sm font-semibold text-gray-900">{word.english_word}</span>
           {word.part_of_speech && (
             <span className="ml-2 text-xs text-gray-400 italic">{word.part_of_speech}</span>
           )}
           <p className="text-xs text-gray-500 mt-0.5">
-            Correct: <span className="font-medium text-gray-700">{result.correctAnswer}</span>
-            <span className="mx-1.5 text-gray-300">·</span>
-            You chose: <span className="text-red-500">{result.selectedAnswer}</span>
+            Meaning: <span className="font-medium text-gray-700">{result.correctAnswer}</span>
+            {!isCorrect && result.selectedAnswer !== undefined && (
+              <>
+                <span className="mx-1.5 text-gray-300">·</span>
+                {result.selectedAnswer ? (
+                  <>You chose: <span className="text-red-500">{result.selectedAnswer}</span></>
+                ) : (
+                  <span className="text-gray-400 italic">Skipped</span>
+                )}
+              </>
+            )}
           </p>
         </div>
         <ChevronDown
@@ -44,7 +58,7 @@ function WrongWordCard({ result }) {
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="px-4 py-4 space-y-3 border-t border-red-100 bg-white">
+        <div className={`px-4 py-4 space-y-3 border-t ${borderColor} bg-white`}>
           <div>
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Meaning</p>
             <p className="text-sm font-medium text-gray-900">{word.bangla_meaning}</p>
@@ -124,25 +138,21 @@ export default function SessionResults({ results, onRestart }) {
         </div>
       </div>
 
-      {/* Correct answers — compact list */}
+      {/* Correct answers */}
       {correct > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-            ✓ Correct ({correct})
+            ✓ Correct ({correct}) — tap to review
           </p>
-          <div className="card divide-y divide-gray-100">
+          <div className="space-y-2">
             {results.filter((r) => r.isCorrect).map((r, i) => (
-              <div key={i} className="px-4 py-2.5 flex items-center gap-2.5">
-                <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
-                <span className="text-sm font-medium text-gray-900">{r.word?.english_word || '—'}</span>
-                <span className="text-xs text-gray-400 ml-auto">{r.correctAnswer}</span>
-              </div>
+              <ResultWordCard key={i} result={r} />
             ))}
           </div>
         </div>
       )}
 
-      {/* Wrong answers — collapsible word cards to study */}
+      {/* Wrong answers */}
       {wrongResults.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -150,7 +160,7 @@ export default function SessionResults({ results, onRestart }) {
           </p>
           <div className="space-y-2">
             {wrongResults.map((r, i) => (
-              <WrongWordCard key={i} result={r} />
+              <ResultWordCard key={i} result={r} />
             ))}
           </div>
         </div>

@@ -47,7 +47,7 @@ function DueWordRow({ word }) {
   )
 }
 
-// ─── How spaced repetition works — always-visible explainer ──────────────────
+// popup for explaining spaced repetition
 function RepetitionExplainer() {
   const [open, setOpen] = useState(false)
 
@@ -128,7 +128,7 @@ function RepetitionExplainer() {
   )
 }
 
-// ─── All-clear screen shown when queue is empty ───────────────────────────────
+// empty state when no words to review
 function AllClearScreen({ onLearn }) {
   return (
     <div className="space-y-5 animate-fade-in">
@@ -183,7 +183,7 @@ function AllClearScreen({ onLearn }) {
   )
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// main component
 export default function ReviewPage() {
   const navigate = useNavigate()
   const { data: dueWords = [], isLoading, refetch } = useDueWords()
@@ -241,7 +241,7 @@ export default function ReviewPage() {
     <AppLayout>
       <div className="max-w-xl mx-auto">
 
-        {/* ── Queue view ── */}
+        {/* queue view */}
         {phase === 'queue' && (
           <>
             {isLoading ? (
@@ -354,7 +354,7 @@ export default function ReviewPage() {
           </>
         )}
 
-        {/* ── MCQ review ── */}
+        {/* mcq review */}
         {phase === 'reviewing' && sessionWords[currentIndex] && (
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -375,7 +375,7 @@ export default function ReviewPage() {
           </div>
         )}
 
-        {/* ── Results ── */}
+        {/* results */}
         {phase === 'results' && (
           <div>
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-6">Review Complete</p>
